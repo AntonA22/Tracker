@@ -12,9 +12,14 @@ protocol TrackerCreationViewControllerDelegate: AnyObject {
 }
 
 final class TrackerCreationViewController: UIViewController {
+    private enum Constants {
+        static let trackerTitleLimit = 38
+    }
+
     weak var delegate: TrackerCreationViewControllerDelegate?
 
     private var selectedSchedule: Set<Weekday> = []
+    private var optionsTopConstraint: NSLayoutConstraint?
 
     private let optionsContainerView: UIView = {
         let view = UIView()
@@ -34,6 +39,16 @@ final class TrackerCreationViewController: UIViewController {
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 1))
         textField.leftViewMode = .always
         return textField
+    }()
+
+    private let titleLimitLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Ограничение 38 символов"
+        label.textColor = .systemRed
+        label.font = .systemFont(ofSize: 17)
+        label.textAlignment = .center
+        label.isHidden = true
+        return label
     }()
 
     private let categoryButton = TrackerOptionButton(title: "Категория")
@@ -74,15 +89,22 @@ final class TrackerCreationViewController: UIViewController {
 
     private func configureTextField() {
         view.addSubview(titleTextField)
+        view.addSubview(titleLimitLabel)
         titleTextField.translatesAutoresizingMaskIntoConstraints = false
+        titleLimitLabel.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             titleTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
             titleTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             titleTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            titleTextField.heightAnchor.constraint(equalToConstant: 75)
+            titleTextField.heightAnchor.constraint(equalToConstant: 75),
+
+            titleLimitLabel.topAnchor.constraint(equalTo: titleTextField.bottomAnchor, constant: 8),
+            titleLimitLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            titleLimitLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16)
         ])
 
+        titleTextField.delegate = self
         titleTextField.addTarget(self, action: #selector(didChangeTitleText), for: .editingChanged)
     }
 
@@ -100,8 +122,11 @@ final class TrackerCreationViewController: UIViewController {
         separatorView.translatesAutoresizingMaskIntoConstraints = false
         scheduleButton.translatesAutoresizingMaskIntoConstraints = false
 
+        let optionsTopConstraint = optionsContainerView.topAnchor.constraint(equalTo: titleTextField.bottomAnchor, constant: 24)
+        self.optionsTopConstraint = optionsTopConstraint
+
         NSLayoutConstraint.activate([
-            optionsContainerView.topAnchor.constraint(equalTo: titleTextField.bottomAnchor, constant: 24),
+            optionsTopConstraint,
             optionsContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             optionsContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             optionsContainerView.heightAnchor.constraint(equalToConstant: 150),
@@ -151,10 +176,20 @@ final class TrackerCreationViewController: UIViewController {
 
     private func updateCreateButtonState() {
         let isEnabled = !(titleTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            !selectedSchedule.isEmpty
+            !selectedSchedule.isEmpty &&
+            !isTitleLimitExceeded
 
         createButton.isEnabled = isEnabled
         createButton.backgroundColor = isEnabled ? .label : .systemGray
+    }
+
+    private var isTitleLimitExceeded: Bool {
+        (titleTextField.text ?? "").count > Constants.trackerTitleLimit
+    }
+
+    private func setTitleLimitWarningVisible(_ isVisible: Bool) {
+        titleLimitLabel.isHidden = !isVisible
+        optionsTopConstraint?.constant = isVisible ? 54 : 24
     }
 
     private var scheduleText: String? {
@@ -170,6 +205,7 @@ final class TrackerCreationViewController: UIViewController {
     }
 
     @objc private func didChangeTitleText() {
+        setTitleLimitWarningVisible(isTitleLimitExceeded)
         updateCreateButtonState()
     }
 
@@ -205,5 +241,26 @@ extension TrackerCreationViewController: ScheduleViewControllerDelegate {
         selectedSchedule = schedule
         updateScheduleButtonSubtitle()
         updateCreateButtonState()
+    }
+}
+
+extension TrackerCreationViewController: UITextFieldDelegate {
+    func textField(
+        _ textField: UITextField,
+        shouldChangeCharactersIn range: NSRange,
+        replacementString string: String
+    ) -> Bool {
+        guard textField === titleTextField else { return true }
+
+        let currentText = textField.text ?? ""
+        guard let textRange = Range(range, in: currentText) else { return false }
+
+        let updatedText = currentText.replacingCharacters(in: textRange, with: string)
+        let isWithinLimit = updatedText.count <= Constants.trackerTitleLimit
+
+        setTitleLimitWarningVisible(!isWithinLimit)
+        updateCreateButtonState()
+
+        return isWithinLimit
     }
 }
