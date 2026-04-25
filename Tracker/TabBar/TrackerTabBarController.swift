@@ -8,30 +8,50 @@
 import UIKit
 
 final class TrackerTabBarController: UITabBarController {
+
+    // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupTabBar()
+    }
 
-        let trackersViewController = TrackersViewController()
-        let trackersNavigationController = UINavigationController(rootViewController: trackersViewController)
-        trackersNavigationController.tabBarItem = UITabBarItem(
+    // MARK: - Setup
+
+    private func setupTabBar() {
+        viewControllers = [
+            makeTrackersController(),
+            makeStatisticsController()
+        ]
+
+        tabBar.tintColor = .ypBlue
+        tabBar.backgroundColor = .systemBackground
+    }
+
+    // MARK: - Builders
+
+    private func makeTrackersController() -> UIViewController {
+        let trackersVC = TrackersViewController()
+        let navigationController = UINavigationController(rootViewController: trackersVC)
+
+        navigationController.tabBarItem = UITabBarItem(
             title: "Трекеры",
             image: UIImage(systemName: "record.circle.fill"),
             selectedImage: UIImage(systemName: "record.circle.fill")
         )
 
-        let statisticsViewController = StatisticsViewController()
-        statisticsViewController.tabBarItem = UITabBarItem(
+        return navigationController
+    }
+
+    private func makeStatisticsController() -> UIViewController {
+        let statisticsVC = StatisticsViewController()
+
+        statisticsVC.tabBarItem = UITabBarItem(
             title: "Статистика",
             image: UIImage(systemName: "hare.fill"),
             selectedImage: UIImage(systemName: "hare.fill")
         )
 
-        viewControllers = [
-            trackersNavigationController,
-            statisticsViewController
-        ]
-
-        tabBar.tintColor = .ypBlue
-        tabBar.backgroundColor = .systemBackground
+        return statisticsVC
     }
 }

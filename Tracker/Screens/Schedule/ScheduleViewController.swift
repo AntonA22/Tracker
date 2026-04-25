@@ -7,12 +7,21 @@
 
 import UIKit
 
+// MARK: - Delegate
+
 protocol ScheduleViewControllerDelegate: AnyObject {
     func scheduleViewController(_ viewController: ScheduleViewController, didSelect schedule: Set<Weekday>)
 }
 
+// MARK: - ViewController
+
 final class ScheduleViewController: UIViewController {
+
+    // MARK: - Public Properties
+
     weak var delegate: ScheduleViewControllerDelegate?
+
+    // MARK: - Private Properties
 
     private var selectedWeekdays: Set<Weekday>
 
@@ -40,6 +49,8 @@ final class ScheduleViewController: UIViewController {
         return button
     }()
 
+    // MARK: - Init
+
     init(selectedWeekdays: Set<Weekday>) {
         self.selectedWeekdays = selectedWeekdays
         super.init(nibName: nil, bundle: nil)
@@ -49,6 +60,8 @@ final class ScheduleViewController: UIViewController {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -60,6 +73,8 @@ final class ScheduleViewController: UIViewController {
         configureDoneButton()
         configureTableView()
     }
+
+    // MARK: - Setup UI
 
     private func configureTableView() {
         view.addSubview(tableView)
@@ -92,6 +107,8 @@ final class ScheduleViewController: UIViewController {
         doneButton.addTarget(self, action: #selector(didTapDoneButton), for: .touchUpInside)
     }
 
+    // MARK: - Actions
+
     @objc private func didTapDoneButton() {
         delegate?.scheduleViewController(self, didSelect: selectedWeekdays)
         navigationController?.popViewController(animated: true)
@@ -107,6 +124,8 @@ final class ScheduleViewController: UIViewController {
         }
     }
 }
+
+// MARK: - UITableViewDataSource
 
 extension ScheduleViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -133,6 +152,8 @@ extension ScheduleViewController: UITableViewDataSource {
         return cell
     }
 }
+
+// MARK: - UITableViewDelegate
 
 extension ScheduleViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
