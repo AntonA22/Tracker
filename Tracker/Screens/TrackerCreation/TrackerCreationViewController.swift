@@ -14,12 +14,60 @@ protocol TrackerCreationViewControllerDelegate: AnyObject {
 final class TrackerCreationViewController: UIViewController {
     private enum Constants {
         static let trackerTitleLimit = 38
+        static let collectionItemSize: CGFloat = 52
+        static let collectionInteritemSpacing: CGFloat = 5
+        static let collectionLineSpacing: CGFloat = 0
+        static let collectionHorizontalInset: CGFloat = 18
+        static let collectionHeaderHeight: CGFloat = 46
+    }
+
+    private enum Section: Int, CaseIterable {
+        case emoji
+        case color
+
+        var title: String {
+            switch self {
+            case .emoji:
+                "Emoji"
+            case .color:
+                "Цвет"
+            }
+        }
     }
 
     weak var delegate: TrackerCreationViewControllerDelegate?
 
     private var selectedSchedule: Set<Weekday> = []
+    private var selectedEmoji: String?
+    private var selectedColor: UIColor?
     private var optionsTopConstraint: NSLayoutConstraint?
+
+    private let emojis = [
+        "🙂", "😻", "🌺", "🐶", "❤️", "😱",
+        "😇", "😡", "🥶", "🤔", "🙌", "🍔",
+        "🥦", "🏓", "🥇", "🎸", "🏝", "😪"
+    ]
+
+    private let colors: [UIColor] = [
+        UIColor(red: 1.00, green: 0.39, blue: 0.39, alpha: 1.00),
+        UIColor(red: 1.00, green: 0.53, blue: 0.12, alpha: 1.00),
+        UIColor(red: 0.00, green: 0.48, blue: 0.98, alpha: 1.00),
+        UIColor(red: 0.43, green: 0.27, blue: 1.00, alpha: 1.00),
+        UIColor(red: 0.20, green: 0.81, blue: 0.41, alpha: 1.00),
+        UIColor(red: 0.90, green: 0.43, blue: 0.83, alpha: 1.00),
+        UIColor(red: 0.98, green: 0.83, blue: 0.83, alpha: 1.00),
+        UIColor(red: 0.20, green: 0.65, blue: 1.00, alpha: 1.00),
+        UIColor(red: 0.27, green: 0.90, blue: 0.62, alpha: 1.00),
+        UIColor(red: 0.21, green: 0.20, blue: 0.49, alpha: 1.00),
+        UIColor(red: 1.00, green: 0.40, blue: 0.30, alpha: 1.00),
+        UIColor(red: 1.00, green: 0.60, blue: 0.80, alpha: 1.00),
+        UIColor(red: 0.96, green: 0.77, blue: 0.55, alpha: 1.00),
+        UIColor(red: 0.47, green: 0.58, blue: 0.96, alpha: 1.00),
+        UIColor(red: 0.51, green: 0.17, blue: 0.95, alpha: 1.00),
+        UIColor(red: 0.68, green: 0.34, blue: 0.85, alpha: 1.00),
+        UIColor(red: 0.55, green: 0.45, blue: 0.90, alpha: 1.00),
+        UIColor(red: 0.18, green: 0.82, blue: 0.35, alpha: 1.00)
+    ]
 
     private let optionsContainerView: UIView = {
         let view = UIView()
@@ -54,6 +102,51 @@ final class TrackerCreationViewController: UIViewController {
     private let categoryButton = TrackerOptionButton(title: "Категория")
     private let scheduleButton = TrackerOptionButton(title: "Расписание")
 
+    private lazy var collectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .vertical
+        layout.minimumInteritemSpacing = Constants.collectionInteritemSpacing
+        layout.minimumLineSpacing = Constants.collectionLineSpacing
+        layout.sectionInset = UIEdgeInsets(
+            top: 0,
+            left: Constants.collectionHorizontalInset,
+            bottom: 16,
+            right: Constants.collectionHorizontalInset
+        )
+        layout.headerReferenceSize = CGSize(width: 0, height: Constants.collectionHeaderHeight)
+
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.backgroundColor = .systemBackground
+        collectionView.alwaysBounceVertical = true
+        collectionView.allowsSelection = true
+        collectionView.allowsMultipleSelection = false
+        collectionView.delaysContentTouches = false
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        collectionView.register(
+            EmojiCollectionViewCell.self,
+            forCellWithReuseIdentifier: EmojiCollectionViewCell.reuseIdentifier
+        )
+        collectionView.register(
+            ColorCollectionViewCell.self,
+            forCellWithReuseIdentifier: ColorCollectionViewCell.reuseIdentifier
+        )
+        collectionView.register(
+            TrackerCreationSectionHeaderView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: TrackerCreationSectionHeaderView.reuseIdentifier
+        )
+        return collectionView
+    }()
+
+    private let buttonsStackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.spacing = 8
+        stackView.distribution = .fillEqually
+        return stackView
+    }()
+
     private let cancelButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Отменить", for: .normal)
@@ -84,6 +177,7 @@ final class TrackerCreationViewController: UIViewController {
         configureTextField()
         configureOptionButtons()
         configureBottomButtons()
+        configureCollectionView()
         updateCreateButtonState()
     }
 
@@ -151,23 +245,33 @@ final class TrackerCreationViewController: UIViewController {
     }
 
     private func configureBottomButtons() {
-        let stackView = UIStackView(arrangedSubviews: [cancelButton, createButton])
-        stackView.axis = .horizontal
-        stackView.spacing = 8
-        stackView.distribution = .fillEqually
+        buttonsStackView.addArrangedSubview(cancelButton)
+        buttonsStackView.addArrangedSubview(createButton)
 
-        view.addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(buttonsStackView)
+        buttonsStackView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            stackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-            stackView.heightAnchor.constraint(equalToConstant: 60)
+            buttonsStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            buttonsStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            buttonsStackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            buttonsStackView.heightAnchor.constraint(equalToConstant: 60)
         ])
 
         cancelButton.addTarget(self, action: #selector(didTapCancelButton), for: .touchUpInside)
         createButton.addTarget(self, action: #selector(didTapCreateButton), for: .touchUpInside)
+    }
+
+    private func configureCollectionView() {
+        view.addSubview(collectionView)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            collectionView.topAnchor.constraint(equalTo: optionsContainerView.bottomAnchor, constant: 16),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            collectionView.bottomAnchor.constraint(equalTo: buttonsStackView.topAnchor, constant: -16)
+        ])
     }
 
     private func updateScheduleButtonSubtitle() {
@@ -177,6 +281,8 @@ final class TrackerCreationViewController: UIViewController {
     private func updateCreateButtonState() {
         let isEnabled = !(titleTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             !selectedSchedule.isEmpty &&
+            selectedEmoji != nil &&
+            selectedColor != nil &&
             !isTitleLimitExceeded
 
         createButton.isEnabled = isEnabled
@@ -222,12 +328,13 @@ final class TrackerCreationViewController: UIViewController {
     @objc private func didTapCreateButton() {
         let title = (titleTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty, !selectedSchedule.isEmpty else { return }
+        guard let selectedEmoji, let selectedColor else { return }
 
         let tracker = Tracker(
             id: UUID(),
             title: title,
-            color: .ypBlue,
-            emoji: "⭐️",
+            color: selectedColor,
+            emoji: selectedEmoji,
             schedule: selectedSchedule
         )
 
@@ -262,5 +369,101 @@ extension TrackerCreationViewController: UITextFieldDelegate {
         updateCreateButtonState()
 
         return isWithinLimit
+    }
+}
+
+extension TrackerCreationViewController: UICollectionViewDataSource {
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        Section.allCases.count
+    }
+
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        guard let section = Section(rawValue: section) else { return 0 }
+
+        switch section {
+        case .emoji:
+            return emojis.count
+        case .color:
+            return colors.count
+        }
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        cellForItemAt indexPath: IndexPath
+    ) -> UICollectionViewCell {
+        guard let section = Section(rawValue: indexPath.section) else {
+            return UICollectionViewCell()
+        }
+
+        switch section {
+        case .emoji:
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: EmojiCollectionViewCell.reuseIdentifier,
+                for: indexPath
+            ) as? EmojiCollectionViewCell else {
+                return UICollectionViewCell()
+            }
+
+            let emoji = emojis[indexPath.item]
+            cell.configure(with: emoji, isSelected: selectedEmoji == emoji)
+            return cell
+        case .color:
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: ColorCollectionViewCell.reuseIdentifier,
+                for: indexPath
+            ) as? ColorCollectionViewCell else {
+                return UICollectionViewCell()
+            }
+
+            let color = colors[indexPath.item]
+            cell.configure(with: color, isSelected: selectedColor == color)
+            return cell
+        }
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        viewForSupplementaryElementOfKind kind: String,
+        at indexPath: IndexPath
+    ) -> UICollectionReusableView {
+        guard
+            kind == UICollectionView.elementKindSectionHeader,
+            let section = Section(rawValue: indexPath.section),
+            let header = collectionView.dequeueReusableSupplementaryView(
+                ofKind: kind,
+                withReuseIdentifier: TrackerCreationSectionHeaderView.reuseIdentifier,
+                for: indexPath
+            ) as? TrackerCreationSectionHeaderView
+        else {
+            return UICollectionReusableView()
+        }
+
+        header.configure(with: section.title)
+        return header
+    }
+}
+
+extension TrackerCreationViewController: UICollectionViewDelegateFlowLayout {
+    func collectionView(
+        _ collectionView: UICollectionView,
+        layout collectionViewLayout: UICollectionViewLayout,
+        sizeForItemAt indexPath: IndexPath
+    ) -> CGSize {
+        CGSize(width: Constants.collectionItemSize, height: Constants.collectionItemSize)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let section = Section(rawValue: indexPath.section) else { return }
+
+        switch section {
+        case .emoji:
+            selectedEmoji = emojis[indexPath.item]
+        case .color:
+            selectedColor = colors[indexPath.item]
+        }
+
+        updateCreateButtonState()
+        collectionView.reloadData()
     }
 }

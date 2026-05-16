@@ -10,6 +10,8 @@ import UIKit
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
 
+    let coreDataStack = CoreDataStack()
+
     // MARK: - UIApplication Lifecycle
 
     func application(
@@ -33,6 +35,6 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didDiscardSceneSessions sceneSessions: Set<UISceneSession>
     ) {
-        // no-op
+        coreDataStack.saveContext()
     }
 }
