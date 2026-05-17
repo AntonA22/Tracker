@@ -12,10 +12,13 @@ final class TrackersViewController: UIViewController {
         static let defaultCategoryTitle = "Новые трекеры"
     }
 
-    var categories: [TrackerCategory] = TrackersViewController.makeInitialCategories()
+    var categories: [TrackerCategory] = []
     var completedTrackers: [TrackerRecord] = []
     var currentDate: Date = Date()
 
+    private let trackerStore: TrackerStore
+    private let trackerCategoryStore: TrackerCategoryStore
+    private let trackerRecordStore: TrackerRecordStore
     private let searchController = UISearchController(searchResultsController: nil)
     private let calendar = Calendar.current
     private var completedTrackerRecords: Set<TrackerRecord> = []
@@ -68,14 +71,32 @@ final class TrackersViewController: UIViewController {
         }
     }
 
+    init(
+        trackerStore: TrackerStore,
+        trackerCategoryStore: TrackerCategoryStore,
+        trackerRecordStore: TrackerRecordStore
+    ) {
+        self.trackerStore = trackerStore
+        self.trackerCategoryStore = trackerCategoryStore
+        self.trackerRecordStore = trackerRecordStore
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
         view.backgroundColor = .systemBackground
+        configureStoreObservers()
         configureNavigationBar()
         configureSearch()
         configureCollectionView()
         configureEmptyState()
+        reloadStoredData()
         updateVisibleContent()
     }
 
@@ -146,6 +167,27 @@ final class TrackersViewController: UIViewController {
         updateEmptyState()
     }
 
+    private func configureStoreObservers() {
+        let updateContent: () -> Void = { [weak self] in
+            self?.reloadStoredData()
+            self?.updateVisibleContent()
+        }
+
+        trackerStore.onContentChanged = updateContent
+        trackerCategoryStore.onContentChanged = updateContent
+        trackerRecordStore.onContentChanged = updateContent
+    }
+
+    private func reloadStoredData() {
+        do {
+            categories = try trackerCategoryStore.fetchCategories()
+            completedTrackers = try trackerRecordStore.fetchRecords()
+            completedTrackerRecords = Set(completedTrackers)
+        } catch {
+            assertionFailure("Failed to load trackers from Core Data: \(error.localizedDescription)")
+        }
+    }
+
     private func updateEmptyState() {
         emptyStateView.update(
             image: UIImage(systemName: emptyStateImageName),
@@ -199,22 +241,14 @@ final class TrackersViewController: UIViewController {
     }
 
     func addTracker(_ tracker: Tracker, toCategoryWithTitle categoryTitle: String) {
-        if let categoryIndex = categories.firstIndex(where: { $0.title == categoryTitle }) {
-            let category = categories[categoryIndex]
-            let updatedCategory = TrackerCategory(
-                title: category.title,
-                trackers: category.trackers + [tracker]
-            )
-
-            categories = categories.enumerated().map { index, category in
-                index == categoryIndex ? updatedCategory : category
-            }
-        } else {
-            let newCategory = TrackerCategory(title: categoryTitle, trackers: [tracker])
-            categories = categories + [newCategory]
+        do {
+            try trackerStore.addTracker(tracker, toCategoryWithTitle: categoryTitle)
+            reloadStoredData()
+            showCreatedTrackerIfNeeded(tracker)
+            updateVisibleContent()
+        } catch {
+            assertionFailure("Failed to save tracker: \(error.localizedDescription)")
         }
-
-        updateVisibleContent()
     }
 
     func markTrackerCompleted(_ trackerId: UUID, on date: Date) {
@@ -222,18 +256,24 @@ final class TrackersViewController: UIViewController {
         guard !isTrackerCompleted(trackerId, on: date) else { return }
 
         let record = TrackerRecord(trackerId: trackerId, date: calendar.startOfDay(for: date))
-        completedTrackerRecords.insert(record)
-        completedTrackers = completedTrackers + [record]
-        collectionView.reloadData()
+        do {
+            try trackerRecordStore.addRecord(record)
+            reloadStoredData()
+            collectionView.reloadData()
+        } catch {
+            assertionFailure("Failed to save tracker record: \(error.localizedDescription)")
+        }
     }
 
     func unmarkTrackerCompleted(_ trackerId: UUID, on date: Date) {
         let record = TrackerRecord(trackerId: trackerId, date: calendar.startOfDay(for: date))
-        completedTrackerRecords.remove(record)
-        completedTrackers = completedTrackers.filter { record in
-            !(record.trackerId == trackerId && calendar.isDate(record.date, inSameDayAs: date))
+        do {
+            try trackerRecordStore.deleteRecord(record)
+            reloadStoredData()
+            collectionView.reloadData()
+        } catch {
+            assertionFailure("Failed to delete tracker record: \(error.localizedDescription)")
         }
-        collectionView.reloadData()
     }
 
     func toggleTrackerCompletion(_ trackerId: UUID, on date: Date) {
@@ -261,6 +301,33 @@ final class TrackersViewController: UIViewController {
         return selectedDay > today
     }
 
+    private func showCreatedTrackerIfNeeded(_ tracker: Tracker) {
+        clearSearch()
+
+        guard !isTrackerScheduled(tracker, on: currentDate) else { return }
+        guard let date = nearestDate(for: tracker.schedule) else { return }
+
+        currentDate = date
+        datePicker.date = date
+    }
+
+    private func clearSearch() {
+        searchController.searchBar.text = nil
+        searchController.isActive = false
+    }
+
+    private func nearestDate(for schedule: Set<Weekday>) -> Date? {
+        guard !schedule.isEmpty else { return currentDate }
+
+        for dayOffset in 0..<7 {
+            guard let date = calendar.date(byAdding: .day, value: dayOffset, to: currentDate) else { continue }
+            guard let weekday = weekday(from: date), schedule.contains(weekday) else { continue }
+            return date
+        }
+
+        return nil
+    }
+
     private func makeCollectionViewLayout() -> UICollectionViewFlowLayout {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
@@ -271,48 +338,6 @@ final class TrackersViewController: UIViewController {
         return layout
     }
 
-    private static func makeInitialCategories() -> [TrackerCategory] {
-        [
-            TrackerCategory(
-                title: "Домашний уют",
-                trackers: [
-                    Tracker(
-                        id: UUID(),
-                        title: "Поливать растения",
-                        color: .systemGreen,
-                        emoji: "🌱",
-                        schedule: [.monday, .wednesday, .friday]
-                    ),
-                    Tracker(
-                        id: UUID(),
-                        title: "Лечь спать до 23:00",
-                        color: .systemIndigo,
-                        emoji: "😴",
-                        schedule: Set(Weekday.allCases)
-                    )
-                ]
-            ),
-            TrackerCategory(
-                title: "Радостные мелочи",
-                trackers: [
-                    Tracker(
-                        id: UUID(),
-                        title: "Прогулка",
-                        color: .systemOrange,
-                        emoji: "🚶",
-                        schedule: [.saturday, .sunday]
-                    ),
-                    Tracker(
-                        id: UUID(),
-                        title: "Позвонить родителям",
-                        color: .systemPink,
-                        emoji: "☎️",
-                        schedule: []
-                    )
-                ]
-            )
-        ]
-    }
 }
 
 extension TrackersViewController: UISearchResultsUpdating {

@@ -19,9 +19,10 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         options connectionOptions: UIScene.ConnectionOptions
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
 
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = TrackerTabBarController()
+        window.rootViewController = TrackerTabBarController(coreDataStack: appDelegate.coreDataStack)
         self.window = window
         window.makeKeyAndVisible()
     }

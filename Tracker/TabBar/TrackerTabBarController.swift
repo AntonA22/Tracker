@@ -9,6 +9,22 @@ import UIKit
 
 final class TrackerTabBarController: UITabBarController {
 
+    // MARK: - Private Properties
+
+    private let coreDataStack: CoreDataStack
+
+    // MARK: - Init
+
+    init(coreDataStack: CoreDataStack) {
+        self.coreDataStack = coreDataStack
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -31,7 +47,11 @@ final class TrackerTabBarController: UITabBarController {
     // MARK: - Builders
 
     private func makeTrackersController() -> UIViewController {
-        let trackersVC = TrackersViewController()
+        let trackersVC = TrackersViewController(
+            trackerStore: coreDataStack.trackerStore,
+            trackerCategoryStore: coreDataStack.trackerCategoryStore,
+            trackerRecordStore: coreDataStack.trackerRecordStore
+        )
         let navigationController = UINavigationController(rootViewController: trackersVC)
 
         navigationController.tabBarItem = UITabBarItem(
