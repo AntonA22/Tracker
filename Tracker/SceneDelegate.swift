@@ -22,8 +22,29 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
 
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = TrackerTabBarController(coreDataStack: appDelegate.coreDataStack)
+        if UserDefaults.standard.bool(forKey: UserDefaults.Keys.hasCompletedOnboarding) {
+            window.rootViewController = TrackerTabBarController(coreDataStack: appDelegate.coreDataStack)
+        } else {
+            let onboardingViewController = OnboardingViewController()
+            onboardingViewController.onFinish = { [weak self] in
+                self?.showMainInterface(coreDataStack: appDelegate.coreDataStack)
+            }
+            window.rootViewController = onboardingViewController
+        }
         self.window = window
         window.makeKeyAndVisible()
+    }
+
+    private func showMainInterface(coreDataStack: CoreDataStack) {
+        let tabBarController = TrackerTabBarController(coreDataStack: coreDataStack)
+        guard let window else { return }
+        UIView.transition(
+            with: window,
+            duration: 0.3,
+            options: .transitionCrossDissolve,
+            animations: {
+                window.rootViewController = tabBarController
+            }
+        )
     }
 }

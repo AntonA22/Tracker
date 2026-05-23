@@ -8,7 +8,11 @@
 import UIKit
 
 protocol TrackerCreationViewControllerDelegate: AnyObject {
-    func trackerCreationViewController(_ viewController: TrackerCreationViewController, didCreate tracker: Tracker)
+    func trackerCreationViewController(
+        _ viewController: TrackerCreationViewController,
+        didCreate tracker: Tracker,
+        categoryTitle: String
+    )
 }
 
 final class TrackerCreationViewController: UIViewController {
@@ -37,7 +41,9 @@ final class TrackerCreationViewController: UIViewController {
 
     weak var delegate: TrackerCreationViewControllerDelegate?
 
+    private let categoryStore: TrackerCategoryStore
     private var selectedSchedule: Set<Weekday> = []
+    private var selectedCategoryTitle: String?
     private var selectedEmoji: String?
     private var selectedColor: UIColor?
     private var optionsTopConstraint: NSLayoutConstraint?
@@ -168,6 +174,16 @@ final class TrackerCreationViewController: UIViewController {
         return button
     }()
 
+    init(categoryStore: TrackerCategoryStore) {
+        self.categoryStore = categoryStore
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -241,6 +257,7 @@ final class TrackerCreationViewController: UIViewController {
             scheduleButton.heightAnchor.constraint(equalToConstant: 75)
         ])
 
+        categoryButton.addTarget(self, action: #selector(didTapCategoryButton), for: .touchUpInside)
         scheduleButton.addTarget(self, action: #selector(didTapScheduleButton), for: .touchUpInside)
     }
 
@@ -280,6 +297,7 @@ final class TrackerCreationViewController: UIViewController {
 
     private func updateCreateButtonState() {
         let isEnabled = !(titleTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            selectedCategoryTitle != nil &&
             !selectedSchedule.isEmpty &&
             selectedEmoji != nil &&
             selectedColor != nil &&
@@ -310,6 +328,16 @@ final class TrackerCreationViewController: UIViewController {
             .joined(separator: ", ")
     }
 
+    @objc private func didTapCategoryButton() {
+        let viewModel = CategoriesViewModel(
+            categoryStore: categoryStore,
+            selectedCategoryTitle: selectedCategoryTitle
+        )
+        let categoriesViewController = CategoriesViewController(viewModel: viewModel)
+        categoriesViewController.delegate = self
+        navigationController?.pushViewController(categoriesViewController, animated: true)
+    }
+
     @objc private func didChangeTitleText() {
         setTitleLimitWarningVisible(isTitleLimitExceeded)
         updateCreateButtonState()
@@ -328,6 +356,7 @@ final class TrackerCreationViewController: UIViewController {
     @objc private func didTapCreateButton() {
         let title = (titleTextField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty, !selectedSchedule.isEmpty else { return }
+        guard let selectedCategoryTitle else { return }
         guard let selectedEmoji, let selectedColor else { return }
 
         let tracker = Tracker(
@@ -338,8 +367,16 @@ final class TrackerCreationViewController: UIViewController {
             schedule: selectedSchedule
         )
 
-        delegate?.trackerCreationViewController(self, didCreate: tracker)
+        delegate?.trackerCreationViewController(self, didCreate: tracker, categoryTitle: selectedCategoryTitle)
         dismiss(animated: true)
+    }
+}
+
+extension TrackerCreationViewController: CategoriesViewControllerDelegate {
+    func categoriesViewController(_ viewController: CategoriesViewController, didSelectCategory title: String) {
+        selectedCategoryTitle = title
+        categoryButton.setSubtitle(title)
+        updateCreateButtonState()
     }
 }
 
