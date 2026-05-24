@@ -9,8 +9,7 @@ import UIKit
 
 struct OnboardingPage {
     let title: String
-    let imageName: String
-    let backgroundColor: UIColor
+    let backgroundImageName: String
 }
 
 final class OnboardingPageContentViewController: UIViewController {
@@ -18,17 +17,17 @@ final class OnboardingPageContentViewController: UIViewController {
 
     private let page: OnboardingPage
 
-    private let imageView: UIImageView = {
+    private let backgroundImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
-        imageView.tintColor = .white
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
         return imageView
     }()
 
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 32, weight: .bold)
-        label.textColor = .white
+        label.textColor = .label
         label.textAlignment = .center
         label.numberOfLines = 0
         return label
@@ -47,28 +46,28 @@ final class OnboardingPageContentViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = page.backgroundColor
-        imageView.image = UIImage(systemName: page.imageName)
+        view.backgroundColor = .systemBackground
+        backgroundImageView.image = UIImage(named: page.backgroundImageName)
         titleLabel.text = page.title
         configureLayout()
     }
 
     private func configureLayout() {
-        view.addSubview(imageView)
+        view.addSubview(backgroundImageView)
         view.addSubview(titleLabel)
 
-        imageView.translatesAutoresizingMaskIntoConstraints = false
+        backgroundImageView.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -80),
-            imageView.widthAnchor.constraint(equalToConstant: 180),
-            imageView.heightAnchor.constraint(equalToConstant: 180),
+            backgroundImageView.topAnchor.constraint(equalTo: view.topAnchor),
+            backgroundImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            backgroundImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            backgroundImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 48)
+            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            titleLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -304)
         ])
     }
 }

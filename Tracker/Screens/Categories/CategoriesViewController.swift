@@ -110,7 +110,7 @@ final class CategoriesViewController: UIViewController {
         viewModel.onSelectedCategoryChanged = { [weak self] title in
             guard let self else { return }
             delegate?.categoriesViewController(self, didSelectCategory: title)
-            navigationController?.popViewController(animated: true)
+            navigationController?.popToRootViewController(animated: true)
         }
 
         viewModel.onError = { [weak self] message in

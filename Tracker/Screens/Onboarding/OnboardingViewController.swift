@@ -13,13 +13,11 @@ final class OnboardingViewController: UIViewController {
     private let pages: [OnboardingPage] = [
         OnboardingPage(
             title: "Отслеживайте только то, что хотите",
-            imageName: "target",
-            backgroundColor: UIColor(red: 0.22, green: 0.56, blue: 0.96, alpha: 1)
+            backgroundImageName: "OnboardingBlue"
         ),
         OnboardingPage(
             title: "Даже если это не литры воды и йога",
-            imageName: "chart.bar.xaxis",
-            backgroundColor: UIColor(red: 0.95, green: 0.42, blue: 0.45, alpha: 1)
+            backgroundImageName: "OnboardingRed"
         )
     ]
 
