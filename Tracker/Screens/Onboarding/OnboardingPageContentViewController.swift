@@ -8,6 +8,7 @@
 import UIKit
 
 struct OnboardingPage {
+    let title: String
     let backgroundImageName: String
 }
 
@@ -21,6 +22,15 @@ final class OnboardingPageContentViewController: UIViewController {
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         return imageView
+    }()
+
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 32, weight: .bold)
+        label.textColor = .label
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        return label
     }()
 
     init(page: OnboardingPage, pageIndex: Int) {
@@ -38,19 +48,26 @@ final class OnboardingPageContentViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         backgroundImageView.image = UIImage(named: page.backgroundImageName)
+        titleLabel.text = page.title
         configureLayout()
     }
 
     private func configureLayout() {
         view.addSubview(backgroundImageView)
+        view.addSubview(titleLabel)
 
         backgroundImageView.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             backgroundImageView.topAnchor.constraint(equalTo: view.topAnchor),
             backgroundImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             backgroundImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            backgroundImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            backgroundImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            titleLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -304)
         ])
     }
 }

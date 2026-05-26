@@ -12,9 +12,11 @@ final class OnboardingViewController: UIViewController {
 
     private let pages: [OnboardingPage] = [
         OnboardingPage(
+            title: "Отслеживайте только то, что хотите",
             backgroundImageName: "OnboardingBlue"
         ),
         OnboardingPage(
+            title: "Даже если это не литры воды и йога",
             backgroundImageName: "OnboardingRed"
         )
     ]
@@ -33,13 +35,16 @@ final class OnboardingViewController: UIViewController {
         let pageControl = UIPageControl()
         pageControl.currentPageIndicatorTintColor = .label
         pageControl.pageIndicatorTintColor = .systemGray3
-        pageControl.isHidden = true
         return pageControl
     }()
 
     private let finishButton: UIButton = {
-        let button = UIButton(type: .custom)
-        button.backgroundColor = .clear
+        let button = UIButton(type: .system)
+        button.setTitle("Вот это технологии!", for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        button.setTitleColor(.white, for: .normal)
+        button.backgroundColor = .label
+        button.layer.cornerRadius = 16
         return button
     }()
 
