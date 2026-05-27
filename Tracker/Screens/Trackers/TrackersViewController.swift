@@ -8,10 +8,6 @@
 import UIKit
 
 final class TrackersViewController: UIViewController {
-    private enum Constants {
-        static let defaultCategoryTitle = "Новые трекеры"
-    }
-
     var categories: [TrackerCategory] = []
     var completedTrackers: [TrackerRecord] = []
     var currentDate: Date = Date()
@@ -118,7 +114,7 @@ final class TrackersViewController: UIViewController {
     }
 
     @objc private func didTapAddButton() {
-        let trackerCreationViewController = TrackerCreationViewController()
+        let trackerCreationViewController = TrackerCreationViewController(categoryStore: trackerCategoryStore)
         trackerCreationViewController.delegate = self
 
         let navigationController = UINavigationController(rootViewController: trackerCreationViewController)
@@ -422,7 +418,11 @@ extension TrackersViewController: TrackerCollectionViewCellDelegate {
 }
 
 extension TrackersViewController: TrackerCreationViewControllerDelegate {
-    func trackerCreationViewController(_ viewController: TrackerCreationViewController, didCreate tracker: Tracker) {
-        addTracker(tracker, toCategoryWithTitle: Constants.defaultCategoryTitle)
+    func trackerCreationViewController(
+        _ viewController: TrackerCreationViewController,
+        didCreate tracker: Tracker,
+        categoryTitle: String
+    ) {
+        addTracker(tracker, toCategoryWithTitle: categoryTitle)
     }
 }
