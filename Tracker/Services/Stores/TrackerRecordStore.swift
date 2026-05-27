@@ -47,6 +47,11 @@ final class TrackerRecordStore: NSObject {
         return fetchedResultsController.fetchedObjects?.compactMap { makeRecord(from: $0) } ?? []
     }
 
+    func completedTrackersCount() throws -> Int {
+        try fetchedResultsController.performFetch()
+        return fetchedResultsController.fetchedObjects?.count ?? 0
+    }
+
     func addRecord(_ record: TrackerRecord, tracker: NSManagedObject) throws {
         let recordCoreData = NSManagedObject(entity: entity(), insertInto: context)
         recordCoreData.setValue(record.trackerId, forKey: "trackerId")

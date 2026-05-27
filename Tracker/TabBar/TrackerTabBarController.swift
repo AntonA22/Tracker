@@ -41,7 +41,7 @@ final class TrackerTabBarController: UITabBarController {
         ]
 
         tabBar.tintColor = .ypBlue
-        tabBar.backgroundColor = .systemBackground
+        tabBar.backgroundColor = .ypBackground
     }
 
     // MARK: - Builders
@@ -55,7 +55,7 @@ final class TrackerTabBarController: UITabBarController {
         let navigationController = UINavigationController(rootViewController: trackersVC)
 
         navigationController.tabBarItem = UITabBarItem(
-            title: "Трекеры",
+            title: L10n.string("tab.trackers"),
             image: UIImage(systemName: "record.circle.fill"),
             selectedImage: UIImage(systemName: "record.circle.fill")
         )
@@ -64,14 +64,15 @@ final class TrackerTabBarController: UITabBarController {
     }
 
     private func makeStatisticsController() -> UIViewController {
-        let statisticsVC = StatisticsViewController()
+        let statisticsVC = StatisticsViewController(trackerRecordStore: coreDataStack.trackerRecordStore)
+        let navigationController = UINavigationController(rootViewController: statisticsVC)
 
-        statisticsVC.tabBarItem = UITabBarItem(
-            title: "Статистика",
+        navigationController.tabBarItem = UITabBarItem(
+            title: L10n.string("tab.statistics"),
             image: UIImage(systemName: "hare.fill"),
             selectedImage: UIImage(systemName: "hare.fill")
         )
 
-        return statisticsVC
+        return navigationController
     }
 }
