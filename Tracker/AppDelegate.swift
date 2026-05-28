@@ -18,7 +18,12 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        true
+        configureAnalytics()
+        return true
+    }
+
+    private func configureAnalytics() {
+        AnalyticsService.activate()
     }
 
     // MARK: - UISceneSession Lifecycle

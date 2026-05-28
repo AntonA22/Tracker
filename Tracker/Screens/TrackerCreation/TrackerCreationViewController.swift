@@ -13,9 +13,20 @@ protocol TrackerCreationViewControllerDelegate: AnyObject {
         didCreate tracker: Tracker,
         categoryTitle: String
     )
+
+    func trackerCreationViewController(
+        _ viewController: TrackerCreationViewController,
+        didUpdate tracker: Tracker,
+        categoryTitle: String
+    )
 }
 
 final class TrackerCreationViewController: UIViewController {
+    private enum Mode {
+        case create
+        case edit(tracker: Tracker, categoryTitle: String)
+    }
+
     private enum Constants {
         static let trackerTitleLimit = 38
         static let collectionItemSize: CGFloat = 52
@@ -42,6 +53,7 @@ final class TrackerCreationViewController: UIViewController {
     weak var delegate: TrackerCreationViewControllerDelegate?
 
     private let categoryStore: TrackerCategoryStore
+    private let mode: Mode
     private var selectedSchedule: Set<Weekday> = []
     private var selectedCategoryTitle: String?
     private var selectedEmoji: String?
@@ -155,7 +167,7 @@ final class TrackerCreationViewController: UIViewController {
 
     private let cancelButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Отменить", for: .normal)
+        button.setTitle(L10n.string("tracker.cancel"), for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         button.setTitleColor(.systemRed, for: .normal)
         button.layer.borderColor = UIColor.systemRed.cgColor
@@ -166,7 +178,7 @@ final class TrackerCreationViewController: UIViewController {
 
     private let createButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Создать", for: .normal)
+        button.setTitle(L10n.string("tracker.create"), for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         button.setTitleColor(.white, for: .normal)
         button.backgroundColor = .systemGray
@@ -174,8 +186,21 @@ final class TrackerCreationViewController: UIViewController {
         return button
     }()
 
-    init(categoryStore: TrackerCategoryStore) {
+    init(
+        categoryStore: TrackerCategoryStore,
+        trackerToEdit: Tracker? = nil,
+        categoryTitle: String? = nil
+    ) {
         self.categoryStore = categoryStore
+        if let trackerToEdit, let categoryTitle {
+            mode = .edit(tracker: trackerToEdit, categoryTitle: categoryTitle)
+            selectedSchedule = trackerToEdit.schedule
+            selectedCategoryTitle = categoryTitle
+            selectedEmoji = trackerToEdit.emoji
+            selectedColor = trackerToEdit.color
+        } else {
+            mode = .create
+        }
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -187,14 +212,24 @@ final class TrackerCreationViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        title = "Новая привычка"
+        title = navigationTitle
         view.backgroundColor = .systemBackground
 
         configureTextField()
         configureOptionButtons()
         configureBottomButtons()
         configureCollectionView()
+        configureInitialState()
         updateCreateButtonState()
+    }
+
+    private var navigationTitle: String {
+        switch mode {
+        case .create:
+            return L10n.string("tracker.new.title")
+        case .edit:
+            return L10n.string("tracker.edit.title")
+        }
     }
 
     private func configureTextField() {
@@ -291,6 +326,15 @@ final class TrackerCreationViewController: UIViewController {
         ])
     }
 
+    private func configureInitialState() {
+        guard case let .edit(tracker, categoryTitle) = mode else { return }
+
+        titleTextField.text = tracker.title
+        categoryButton.setSubtitle(categoryTitle)
+        updateScheduleButtonSubtitle()
+        createButton.setTitle(L10n.string("tracker.save"), for: .normal)
+    }
+
     private func updateScheduleButtonSubtitle() {
         scheduleButton.setSubtitle(scheduleText)
     }
@@ -359,15 +403,28 @@ final class TrackerCreationViewController: UIViewController {
         guard let selectedCategoryTitle else { return }
         guard let selectedEmoji, let selectedColor else { return }
 
+        let trackerId: UUID
+        switch mode {
+        case .create:
+            trackerId = UUID()
+        case let .edit(existingTracker, _):
+            trackerId = existingTracker.id
+        }
+
         let tracker = Tracker(
-            id: UUID(),
+            id: trackerId,
             title: title,
             color: selectedColor,
             emoji: selectedEmoji,
             schedule: selectedSchedule
         )
 
-        delegate?.trackerCreationViewController(self, didCreate: tracker, categoryTitle: selectedCategoryTitle)
+        switch mode {
+        case .create:
+            delegate?.trackerCreationViewController(self, didCreate: tracker, categoryTitle: selectedCategoryTitle)
+        case .edit:
+            delegate?.trackerCreationViewController(self, didUpdate: tracker, categoryTitle: selectedCategoryTitle)
+        }
         dismiss(animated: true)
     }
 }

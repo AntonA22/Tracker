@@ -69,6 +69,18 @@ final class TrackerStore: NSObject {
         try context.save()
     }
 
+    func updateTracker(_ tracker: Tracker, categoryTitle: String) throws {
+        guard let trackerCoreData = try fetchTrackerCoreData(id: tracker.id) else { return }
+        let category = try fetchOrCreateCategory(title: categoryTitle)
+
+        trackerCoreData.setValue(tracker.title, forKey: "title")
+        trackerCoreData.setValue(TrackerCoreDataMapper.colorHex(from: tracker), forKey: "colorHex")
+        trackerCoreData.setValue(tracker.emoji, forKey: "emoji")
+        trackerCoreData.setValue(TrackerCoreDataMapper.scheduleString(from: tracker.schedule), forKey: "schedule")
+        trackerCoreData.setValue(category, forKey: "category")
+        try context.save()
+    }
+
     // MARK: - Private Methods
 
     private func fetchTrackerCoreData(id: UUID) throws -> NSManagedObject? {

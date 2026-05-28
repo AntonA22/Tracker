@@ -123,15 +123,6 @@ final class TrackerCollectionViewCell: UICollectionViewCell {
     }
 
     private func daysText(_ days: Int) -> String {
-        let remainder10 = days % 10
-        let remainder100 = days % 100
-
-        if remainder10 == 1 && remainder100 != 11 {
-            return "\(days) день"
-        } else if (2...4).contains(remainder10) && !(12...14).contains(remainder100) {
-            return "\(days) дня"
-        } else {
-            return "\(days) дней"
-        }
+        L10n.days(days)
     }
 }
