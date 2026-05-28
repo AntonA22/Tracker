@@ -24,7 +24,7 @@ enum TrackerFilter: CaseIterable {
         }
     }
 
-    var isActiveFilter: Bool {
+    var showsActiveState: Bool {
         switch self {
         case .completed, .incomplete:
             return true

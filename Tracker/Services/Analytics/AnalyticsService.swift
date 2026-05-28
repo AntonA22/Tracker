@@ -26,6 +26,11 @@ enum AnalyticsService {
         case delete
     }
 
+    enum Screen: String {
+        case main = "Main"
+        case statistics = "Statistics"
+    }
+
     static func activate() {
         #if canImport(AppMetricaCore)
         guard
@@ -41,10 +46,10 @@ enum AnalyticsService {
         #endif
     }
 
-    static func report(_ event: Event, screen: String = "Main", item: Item? = nil) {
+    static func report(_ event: Event, screen: Screen = .main, item: Item? = nil) {
         var parameters: [String: String] = [
             "event": event.rawValue,
-            "screen": screen
+            "screen": screen.rawValue
         ]
 
         if let item {

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		C0DE17012FCE000100000001 /* AppMetricaCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE17002FCE000100000001 /* AppMetricaCore */; };
+		C0DE17212FCE000100000001 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE17202FCE000100000001 /* SnapshotTesting */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0DE17212FCE000100000001 /* SnapshotTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +134,7 @@
 			);
 			name = TrackerTests;
 			packageProductDependencies = (
+				C0DE17202FCE000100000001 /* SnapshotTesting */,
 			);
 			productName = TrackerTests;
 			productReference = C0DE17102FCE000100000001 /* TrackerTests.xctest */;
@@ -168,6 +171,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C0DE17032FCE000100000001 /* XCRemoteSwiftPackageReference "appmetrica-sdk-ios" */,
+				C0DE17232FCE000100000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6992D3302F9CA56900066589 /* Products */;
@@ -489,6 +493,14 @@
 				minimumVersion = 5.0.0;
 			};
 		};
+		C0DE17232FCE000100000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.19.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -496,6 +508,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C0DE17032FCE000100000001 /* XCRemoteSwiftPackageReference "appmetrica-sdk-ios" */;
 			productName = AppMetricaCore;
+		};
+		C0DE17202FCE000100000001 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0DE17232FCE000100000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

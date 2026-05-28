@@ -84,9 +84,13 @@ extension FiltersViewController: UITableViewDataSource {
         configuration.textProperties.font = .systemFont(ofSize: 17)
         cell.contentConfiguration = configuration
         cell.backgroundColor = .secondarySystemBackground
-        cell.accessoryType = selectedFilter == filter && filter.isActiveFilter ? .checkmark : .none
+        cell.accessoryType = shouldShowCheckmark(for: filter) ? .checkmark : .none
         cell.tintColor = .ypBlue
         return cell
+    }
+
+    private func shouldShowCheckmark(for filter: TrackerFilter) -> Bool {
+        selectedFilter == filter && filter.showsActiveState
     }
 }
 

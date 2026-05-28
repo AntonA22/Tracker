@@ -25,8 +25,15 @@ final class CoreDataStack {
 
     // MARK: - Init
 
-    init() {
+    init(inMemory: Bool = false) {
         persistentContainer = NSPersistentContainer(name: "Tracker")
+
+        if inMemory {
+            let storeDescription = NSPersistentStoreDescription()
+            storeDescription.type = NSInMemoryStoreType
+            persistentContainer.persistentStoreDescriptions = [storeDescription]
+        }
+
         persistentContainer.loadPersistentStores { _, error in
             if let error {
                 assertionFailure("Core Data store failed to load: \(error.localizedDescription)")

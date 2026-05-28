@@ -10,7 +10,12 @@ import UIKit
 final class TrackersViewController: UIViewController {
     var categories: [TrackerCategory] = []
     var completedTrackers: [TrackerRecord] = []
-    var currentDate: Date = Date()
+    var currentDate: Date = Date() {
+        didSet {
+            guard isViewLoaded else { return }
+            datePicker.date = currentDate
+        }
+    }
 
     private let trackerStore: TrackerStore
     private let trackerCategoryStore: TrackerCategoryStore
@@ -237,7 +242,7 @@ final class TrackersViewController: UIViewController {
 
     private func updateFiltersButton() {
         filtersButton.isHidden = !hasTrackersForSelectedDate
-        filtersButton.backgroundColor = selectedFilter.isActiveFilter ? .systemRed : .ypBlue
+        filtersButton.backgroundColor = selectedFilter.showsActiveState ? .systemRed : .ypBlue
     }
 
     private var emptyStateImageName: String {

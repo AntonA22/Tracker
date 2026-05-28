@@ -5,66 +5,55 @@
 //  Created by Codex on 27.05.2026.
 //
 
+import SnapshotTesting
 import XCTest
 @testable import Tracker
 
 final class TrackersSnapshotTests: XCTestCase {
     func testMainScreenLightSnapshot() {
-        let image = renderMainScreen(userInterfaceStyle: .light)
+        let viewController = makeMainScreen()
 
-        attach(image, name: "main-screen-light")
-        XCTAssertFalse(image.isBlank)
+        assertSnapshot(
+            of: viewController,
+            as: .image(
+                on: .iPhone13,
+                traits: .init(userInterfaceStyle: .light)
+            )
+        )
     }
 
     func testMainScreenDarkSnapshot() {
-        let image = renderMainScreen(userInterfaceStyle: .dark)
+        let viewController = makeMainScreen()
 
-        attach(image, name: "main-screen-dark")
-        XCTAssertFalse(image.isBlank)
+        assertSnapshot(
+            of: viewController,
+            as: .image(
+                on: .iPhone13,
+                traits: .init(userInterfaceStyle: .dark)
+            )
+        )
     }
 
-    private func renderMainScreen(userInterfaceStyle: UIUserInterfaceStyle) -> UIImage {
-        let coreDataStack = CoreDataStack()
+    private func makeMainScreen() -> UIViewController {
+        let coreDataStack = CoreDataStack(inMemory: true)
         let viewController = TrackerTabBarController(coreDataStack: coreDataStack)
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        viewController.loadViewIfNeeded()
 
-        window.overrideUserInterfaceStyle = userInterfaceStyle
-        viewController.overrideUserInterfaceStyle = userInterfaceStyle
-        window.rootViewController = viewController
-        window.makeKeyAndVisible()
-        viewController.view.frame = window.bounds
-        viewController.view.setNeedsLayout()
-        viewController.view.layoutIfNeeded()
+        let trackersViewController = (viewController.viewControllers?.first as? UINavigationController)?
+            .viewControllers
+            .first as? TrackersViewController
+        trackersViewController?.currentDate = makeSnapshotDate()
 
-        let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
-        return renderer.image { _ in
-            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
-        }
+        return viewController
     }
 
-    private func attach(_ image: UIImage, name: String) {
-        guard let data = image.pngData() else { return }
-
-        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.png")
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
-    }
-}
-
-private extension UIImage {
-    var isBlank: Bool {
-        size == .zero || pixelChecksum == 0
-    }
-
-    var pixelChecksum: UInt64 {
-        guard let data = pngData(), !data.isEmpty else { return 0 }
-        var checksum: UInt64 = 0
-
-        for byte in data {
-            checksum = checksum &* 31 &+ UInt64(byte)
-        }
-
-        return checksum
+    private func makeSnapshotDate() -> Date {
+        DateComponents(
+            calendar: Calendar(identifier: .gregorian),
+            timeZone: TimeZone(secondsFromGMT: 0),
+            year: 2026,
+            month: 5,
+            day: 28
+        ).date ?? Date(timeIntervalSince1970: 0)
     }
 }
